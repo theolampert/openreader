@@ -5,6 +5,7 @@ from starlette.applications import Starlette
 from starlette.responses import JSONResponse
 from starlette.background import BackgroundTask
 from starlette.config import environ
+from starlette.middleware.gzip import GZipMiddleware
 from starlette.graphql import GraphQLApp
 from starlette.config import Config
 import graphene
@@ -72,6 +73,13 @@ class Query(graphene.ObjectType):
         return results
 
 
+@app.middleware('http')
+async def add_custom_header(request, call_next):
+    response = await call_next(request)
+    response.headers['Cache-Control'] = 'max-age=6000'
+    return response
+
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 app.add_route('/graphql', GraphQLApp(schema=graphene.Schema(query=Query)))
 
