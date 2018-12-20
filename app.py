@@ -21,15 +21,16 @@ DEBUG = config('DEBUG', cast=bool, default=False)
 
 
 def download_and_parse_article(url):
-    article = Article(url, preserve_html=True)
+    article = Article(url, keep_article_html=True)
     article.download()
     article.parse()
-    article.nlp()
+    #article.nlp()
     return article
 
 
 class ArticleSchema(graphene.ObjectType):
     hostname = graphene.String()
+    article_html = graphene.String()
     title = graphene.String()
     text = graphene.String()
     summary = graphene.String()
@@ -47,6 +48,7 @@ class Query(graphene.ObjectType):
         result = download_and_parse_article(url)
         return ArticleSchema(
             hostname=urlparse(url).hostname,
+            article_html=result.article_html,
             title=result.title,
             text=result.text,
             summary=result.summary,
@@ -62,6 +64,7 @@ class Query(graphene.ObjectType):
             result = download_and_parse_article(url)
             results.append(ArticleSchema(
                 hostname=urlparse(url).hostname,
+                article_html=result.article_html,
                 title=result.title,
                 text=result.text,
                 summary=result.summary,
