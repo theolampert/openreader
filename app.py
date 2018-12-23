@@ -26,7 +26,7 @@ redis_url = urlparse(REDIS_URL)
 R = redis.Redis(
     host=redis_url.hostname,
     port=redis_url.port,
-    password=redis_url.password
+    password=redis_url.password,
     db=0
 )
 
