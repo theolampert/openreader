@@ -1,6 +1,6 @@
 from urllib.parse import urlparse
+import json
 
-from newspaper import Article
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse
 from starlette.background import BackgroundTask
@@ -8,24 +8,22 @@ from starlette.config import environ
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.graphql import GraphQLApp
 from starlette.config import Config
-import graphene
 
+from newspaper import Article
 import uvicorn
+import redis
+import graphene
 
 
 config = Config('.env')
 app = Starlette()
 
+REDIS_URL = config('REDIS_URL', default='redis://127.0.0.1:6379')
 PORT = config('PORT', cast=int, default=8000)
 DEBUG = config('DEBUG', cast=bool, default=False)
 
-
-def download_and_parse_article(url):
-    article = Article(url, keep_article_html=True)
-    article.download()
-    article.parse()
-    #article.nlp()
-    return article
+redis_url = urlparse(REDIS_URL)
+R = redis.Redis(host=redis_url.hostname, port=redis_url.port, db=0)
 
 
 class ArticleSchema(graphene.ObjectType):
@@ -40,39 +38,42 @@ class ArticleSchema(graphene.ObjectType):
     keywords = graphene.List(graphene.String)
 
 
+def download_and_parse_article(url):
+    data = None
+    if R.get(url) != None:
+        data = R.get(url)
+    else:
+        article = Article(url, keep_article_html=True)
+        article.download()
+        article.parse()
+        encodeable = {
+            'hostname': urlparse(url).hostname,
+            'article_html': article.article_html,
+            'title': article.title,
+            'text': article.text,
+            'summary': article.summary,
+            'tags': list(article.tags),
+            'top_image': article.top_image,
+            'authors': article.authors,
+            'keywords': article.keywords
+        }
+        R.set(url, json.dumps(encodable))
+    print(json.loads(data)['title'])
+    return ArticleSchema(**json.loads(data))
+
+
 class Query(graphene.ObjectType):
     article = graphene.Field(ArticleSchema, url=graphene.String(required=True))
     articles = graphene.List(ArticleSchema, urls=graphene.List(graphene.String))
 
     def resolve_article(self, info, url):
-        result = download_and_parse_article(url)
-        return ArticleSchema(
-            hostname=urlparse(url).hostname,
-            article_html=result.article_html,
-            title=result.title,
-            text=result.text,
-            summary=result.summary,
-            tags=list(result.tags),
-            top_image=result.top_image,
-            authors=result.authors,
-            keywords=result.keywords
-        )
+        return download_and_parse_article(url)
 
     def resolve_articles(self, info, urls):
         results = []
         for url in urls:
             result = download_and_parse_article(url)
-            results.append(ArticleSchema(
-                hostname=urlparse(url).hostname,
-                article_html=result.article_html,
-                title=result.title,
-                text=result.text,
-                summary=result.summary,
-                tags=list(result.tags),
-                top_image=result.top_image,
-                authors=result.authors,
-                keywords=result.keywords
-            ))
+            results.append(result)
         return results
 
 

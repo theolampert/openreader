@@ -10,6 +10,7 @@ newspaper3k = "*"
 starlette = "*"
 uvicorn = "*"
 graphene = "*"
+redis = "*"
 
 [requires]
 python_version = "3.7"
