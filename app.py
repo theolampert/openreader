@@ -23,7 +23,12 @@ PORT = config('PORT', cast=int, default=8000)
 DEBUG = config('DEBUG', cast=bool, default=False)
 
 redis_url = urlparse(REDIS_URL)
-R = redis.Redis(host=redis_url.hostname, port=redis_url.port, db=0)
+R = redis.Redis(
+    host=redis_url.hostname,
+    port=redis_url.port,
+    password=redis_url.password
+    db=0
+)
 
 
 class ArticleSchema(graphene.ObjectType):
