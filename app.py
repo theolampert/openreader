@@ -51,7 +51,7 @@ def download_and_parse_article(url):
         article = Article(url, keep_article_html=True)
         article.download()
         article.parse()
-        encodeable = {
+        encodable = {
             'hostname': urlparse(url).hostname,
             'article_html': article.article_html,
             'title': article.title,
