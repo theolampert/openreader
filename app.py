@@ -64,7 +64,7 @@ def download_and_parse_article(url):
         }
         data = json.dumps(encodable)
         R.set(url, data)
-        return ArticleSchema(encodable)
+        return ArticleSchema(**encodable)
     return ArticleSchema(**json.loads(data))
 
 
