@@ -62,8 +62,9 @@ def download_and_parse_article(url):
             'authors': article.authors,
             'keywords': article.keywords
         }
-        R.set(url, json.dumps(encodable))
-    print(json.loads(data)['title'])
+        data = json.dumps(encodable)
+        R.set(url, data)
+        return ArticleSchema(encodable)
     return ArticleSchema(**json.loads(data))
 
 
