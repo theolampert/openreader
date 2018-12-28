@@ -11,6 +11,8 @@ starlette = "*"
 uvicorn = "*"
 graphene = "*"
 redis = "*"
+requests = "*"
+pook = "*"
 
 [requires]
 python_version = "3.7"

@@ -2,9 +2,6 @@ from urllib.parse import urlparse
 import json
 
 from starlette.applications import Starlette
-from starlette.responses import JSONResponse
-from starlette.background import BackgroundTask
-from starlette.config import environ
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.graphql import GraphQLApp
 from starlette.config import Config
@@ -17,6 +14,7 @@ import graphene
 
 config = Config('.env')
 app = Starlette()
+
 
 REDIS_URL = config('REDIS_URL', default='redis://127.0.0.1:6379')
 PORT = config('PORT', cast=int, default=8000)
@@ -45,14 +43,16 @@ class ArticleSchema(graphene.ObjectType):
 
 def download_and_parse_article(url):
     data = None
-    if R.get(url) != None:
+    if R.get(url):
         data = R.get(url)
+        return ArticleSchema(**json.loads(data))
     else:
+        parsed_url = urlparse(url)
         article = Article(url, keep_article_html=True)
         article.download()
         article.parse()
         encodable = {
-            'hostname': urlparse(url).hostname,
+            'hostname': parsed_url.hostname,
             'article_html': article.article_html,
             'title': article.title,
             'text': article.text,
@@ -65,7 +65,6 @@ def download_and_parse_article(url):
         data = json.dumps(encodable)
         R.set(url, data)
         return ArticleSchema(**encodable)
-    return ArticleSchema(**json.loads(data))
 
 
 class Query(graphene.ObjectType):
@@ -78,9 +77,16 @@ class Query(graphene.ObjectType):
     def resolve_articles(self, info, urls):
         results = []
         for url in urls:
-            result = download_and_parse_article(url)
-            results.append(result)
+            try:
+                result = download_and_parse_article(url)
+                results.append(result)
+            except Exception:
+                pass
+
         return results
+
+
+schema = graphene.Schema(query=Query)
 
 
 @app.middleware('http')

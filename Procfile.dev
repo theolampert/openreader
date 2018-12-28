@@ -1,0 +1,2 @@
+web: pipenv run python app.py
+redis: redis-server
