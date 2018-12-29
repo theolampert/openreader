@@ -9,7 +9,7 @@ class Cache():
         try:
             return self.store[key]
         except KeyError:
-            return ''
+            return None
 
     def set(self, key, value):
         self.store[key] = value

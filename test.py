@@ -5,6 +5,7 @@ import json
 from urllib.parse import urlparse
 
 from app import schema
+from cache import cache
 
 import pook
 
@@ -28,6 +29,13 @@ message = '''
 
 
 class TestSchemaQueries(unittest.TestCase):
+    def test_cache(self):
+        cache.set('foo', 'bar')
+        result = cache.get('foo')
+        no_result = cache.get('baz')
+        self.assertEqual(result, 'bar')
+        self.assertEqual(no_result, None)
+
     def test_article_ok(self):
         pook.get('http://localhost:8001/',
                 reply=200,

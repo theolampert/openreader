@@ -4,53 +4,34 @@ import json
 from starlette.applications import Starlette
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.graphql import GraphQLApp
-from starlette.config import Config
 
 from newspaper import Article
 import uvicorn
-import redis
 import graphene
 
+from settings import DEBUG, PORT
+from cache import cache
+from schema import ArticleSchema
 
-config = Config('.env')
+
 app = Starlette()
 
 
-REDIS_URL = config('REDIS_URL', default='redis://127.0.0.1:6379')
-PORT = config('PORT', cast=int, default=8000)
-DEBUG = config('DEBUG', cast=bool, default=False)
-
-redis_url = urlparse(REDIS_URL)
-R = redis.Redis(
-    host=redis_url.hostname,
-    port=redis_url.port,
-    password=redis_url.password,
-    db=0
-)
-
-
-class ArticleSchema(graphene.ObjectType):
-    hostname = graphene.String()
-    article_html = graphene.String()
-    title = graphene.String()
-    text = graphene.String()
-    summary = graphene.String()
-    tags = graphene.List(graphene.String)
-    top_image = graphene.String()
-    authors = graphene.List(graphene.String)
-    keywords = graphene.List(graphene.String)
-
-
 def download_and_parse_article(url):
+    article = Article(url, keep_article_html=True)
+    article.download()
+    article.parse()
+    return article
+
+
+def get_article(url):
     data = None
-    if R.get(url):
-        data = R.get(url)
-        return ArticleSchema(**json.loads(data))
+    if cache.get(url):
+        data = cache.get(url)
+        return json.loads(data)
     else:
         parsed_url = urlparse(url)
-        article = Article(url, keep_article_html=True)
-        article.download()
-        article.parse()
+        article = download_and_parse_article(url)
         encodable = {
             'hostname': parsed_url.hostname,
             'article_html': article.article_html,
@@ -63,8 +44,8 @@ def download_and_parse_article(url):
             'keywords': article.keywords
         }
         data = json.dumps(encodable)
-        R.set(url, data)
-        return ArticleSchema(**encodable)
+        cache.set(url, data)
+        return encodable
 
 
 class Query(graphene.ObjectType):
@@ -72,14 +53,15 @@ class Query(graphene.ObjectType):
     articles = graphene.List(ArticleSchema, urls=graphene.List(graphene.String))
 
     def resolve_article(self, info, url):
-        return download_and_parse_article(url)
+        result = get_article(url)
+        return ArticleSchema(**result)
 
     def resolve_articles(self, info, urls):
         results = []
         for url in urls:
             try:
-                result = download_and_parse_article(url)
-                results.append(result)
+                result = get_article(url)
+                results.append(ArticleSchema(**result))
             except Exception:
                 pass
 
