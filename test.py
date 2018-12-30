@@ -1,10 +1,11 @@
-from graphene.test import Client
-
 import unittest
 import json
 from urllib.parse import urlparse
 
-from app import schema
+from graphene.test import Client
+from starlette.testclient import TestClient
+
+from app import schema, app
 from cache import cache
 
 import pook
@@ -29,6 +30,11 @@ message = '''
 
 
 class TestSchemaQueries(unittest.TestCase):
+    def test_app(self):
+        client = TestClient(app)
+        response = client.get('/')
+        self.assertEqual(response.status_code, 200)
+
     def test_cache(self):
         cache.set('foo', 'bar')
         result = cache.get('foo')

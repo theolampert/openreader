@@ -2,8 +2,10 @@ from urllib.parse import urlparse
 import json
 
 from starlette.applications import Starlette
+from starlette.graphql import GraphQLApp, GraphQLError
 from starlette.middleware.gzip import GZipMiddleware
-from starlette.graphql import GraphQLApp
+from starlette.responses import HTMLResponse
+from starlette.staticfiles import StaticFiles
 
 from newspaper import Article
 import uvicorn
@@ -63,6 +65,8 @@ class Query(graphene.ObjectType):
                 result = get_article(url)
                 results.append(ArticleSchema(**result))
             except Exception:
+                # results.append(
+                    # GraphQLError('Failed to parse url {}'.format(url)))
                 pass
 
         return results
@@ -75,11 +79,21 @@ schema = graphene.Schema(query=Query)
 async def add_custom_header(request, call_next):
     response = await call_next(request)
     response.headers['Cache-Control'] = 'max-age=6000'
+    print(response)  # Might be able to strip null values here
     return response
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+app = Starlette(debug=True, template_directory='templates')
+app.mount('/static', StaticFiles(directory='static'), name='static')
 
-app.add_route('/graphql', GraphQLApp(schema=graphene.Schema(query=Query)))
+
+@app.route('/')
+async def homepage(request):
+    template = app.get_template('index.html')
+    content = template.render(request=request)
+    return HTMLResponse(content)
+
+app.add_route('/graphql', GraphQLApp(schema=schema))
 
 app.debug = DEBUG
 
