@@ -121,9 +121,16 @@ class TestSchemaQueries(unittest.TestCase):
             'data': {
                 'articles': [{
                     'title': expected_title,
-                    'hostname': expected_hostname
-                }]
-            }
+                    'hostname': expected_hostname,
+                },
+                    None
+                ]
+            },
+            'errors': [{
+                'locations': [{'column': 17, 'line': 3}],
+                'message': 'Failed to parse url unscrapeableurl',
+                'path': ['articles', 1]
+            }]
         }
 
         self.assertEqual(json.loads(json.dumps(executed)), expected)

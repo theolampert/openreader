@@ -45,8 +45,6 @@ def get_article(url):
             'authors': article.authors,
             'keywords': article.keywords
         }
-        data = json.dumps(encodable)
-        cache.set(url, data)
         return encodable
 
 
@@ -64,11 +62,11 @@ class Query(graphene.ObjectType):
             try:
                 result = get_article(url)
                 results.append(ArticleSchema(**result))
+                cache.set(url, json.dumps(result))
             except Exception:
-                # results.append(
-                    # GraphQLError('Failed to parse url {}'.format(url)))
+                results.append(
+                    GraphQLError('Failed to parse url {}'.format(url)))
                 pass
-
         return results
 
 
@@ -79,7 +77,6 @@ schema = graphene.Schema(query=Query)
 async def add_custom_header(request, call_next):
     response = await call_next(request)
     response.headers['Cache-Control'] = 'max-age=6000'
-    print(response)  # Might be able to strip null values here
     return response
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
