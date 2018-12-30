@@ -12,7 +12,7 @@ class Cache():
             return None
 
     def set(self, key, value):
-        self.store[key] = value
+        self.store[key] = bytes(value, 'utf-8')
 
 
 try:

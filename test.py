@@ -39,7 +39,7 @@ class TestSchemaQueries(unittest.TestCase):
         cache.set('foo', 'bar')
         result = cache.get('foo')
         no_result = cache.get('baz')
-        self.assertEqual(result, 'bar')
+        self.assertEqual(result, bytes('bar', 'utf-8'))
         self.assertEqual(no_result, None)
 
     def test_article_ok(self):
