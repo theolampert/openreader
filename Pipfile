@@ -13,6 +13,7 @@ graphene = "*"
 redis = "*"
 requests = "*"
 pook = "*"
+aiofiles = "*"
 
 [requires]
 python_version = "3.7"
