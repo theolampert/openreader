@@ -17,7 +17,10 @@ from cache import cache
 from schema import ArticleSchema
 
 
-app = Starlette()
+app = Starlette(debug=True, template_directory='templates')
+
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(CORSMiddleware, allow_origins=['*'])
 
 
 def download_and_parse_article(url):
@@ -78,11 +81,10 @@ schema = graphene.Schema(query=Query)
 async def add_custom_header(request, call_next):
     response = await call_next(request)
     response.headers['Cache-Control'] = 'max-age=6000'
+    response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
-app.add_middleware(GZipMiddleware, minimum_size=1000)
-app.add_middleware(CORSMiddleware, allow_origins=['*'])
-app = Starlette(debug=True, template_directory='templates')
+
 app.mount('/static', StaticFiles(directory='static'), name='static')
 
 
