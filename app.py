@@ -6,6 +6,7 @@ from starlette.graphql import GraphQLApp, GraphQLError
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.responses import HTMLResponse
 from starlette.staticfiles import StaticFiles
+from starlette.middleware.cors import CORSMiddleware
 
 from newspaper import Article
 import uvicorn
@@ -77,10 +78,10 @@ schema = graphene.Schema(query=Query)
 async def add_custom_header(request, call_next):
     response = await call_next(request)
     response.headers['Cache-Control'] = 'max-age=6000'
-    response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(CORSMiddleware, allow_origins=['*'])
 app = Starlette(debug=True, template_directory='templates')
 app.mount('/static', StaticFiles(directory='static'), name='static')
 
