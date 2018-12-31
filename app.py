@@ -77,6 +77,7 @@ schema = graphene.Schema(query=Query)
 async def add_custom_header(request, call_next):
     response = await call_next(request)
     response.headers['Cache-Control'] = 'max-age=6000'
+    response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
